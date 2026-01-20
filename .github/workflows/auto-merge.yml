@@ -9,6 +9,9 @@ jobs:
   auto-merge:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,15 +20,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Get the head SHA from the workflow run
           HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
-          
-          # Find PR with this head SHA
           PR_NUMBER=$(gh pr list --state open --json number,headRefOid --jq ".[] | select(.headRefOid == \"$HEAD_SHA\") | .number")
           
           if [ -n "$PR_NUMBER" ]; then
             echo "Merging PR #$PR_NUMBER"
-            gh pr merge "$PR_NUMBER" --squash --delete-branch || true
+            gh pr merge "$PR_NUMBER" --squash || true
           else
             echo "No open PR found for SHA: $HEAD_SHA"
           fi
